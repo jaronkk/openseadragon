@@ -1194,7 +1194,11 @@
      */
     function getPointRelativeToAbsolute( point, element ) {
         var offset = $.getElementOffset( element );
-        return point.minus( offset );
+        point = point.minus( offset );
+        if (element.parentNode.className == 'keyboard-command-container') {
+          point.y -= element.parentNode.scrollTop;
+        }
+        return point;
     }
 
     /**

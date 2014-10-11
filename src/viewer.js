@@ -263,6 +263,7 @@ $.Viewer = function( options ) {
 
     this.element              = this.element || document.getElementById( this.id );
     this.canvas               = $.makeNeutralElement( "div" );
+    this.keyboardCommandContainer = $.makeNeutralElement( "div" );
     this.keyboardCommandArea  = $.makeNeutralElement( "textarea" );
     this.drawersContainer     = $.makeNeutralElement( "div" );
     this.overlaysContainer    = $.makeNeutralElement( "div" );
@@ -273,6 +274,7 @@ $.Viewer = function( options ) {
         style.height   = "100%";
         style.overflow = "hidden";
         style.position = "absolute";
+        style.pointerEvents = "none";
         style.top      = "0px";
         style.left     = "0px";
     }(this.canvas.style));
@@ -290,10 +292,22 @@ $.Viewer = function( options ) {
         style.textAlign = "left";  // needed to protect against
     }( this.container.style ));
 
-    this.keyboardCommandArea.className = "keyboard-command-area";
+    this.keyboardCommandContainer.className = "keyboard-command-container";
     (function( style ){
         style.width    = "100%";
         style.height   = "100%";
+        style.overflow = "hidden";
+        style.overflowY = "scroll";
+        style.position = "absolute";
+        style.top      = "0px";
+        style.left     = "0px";
+        style.resize   = "none";
+    }(  this.keyboardCommandContainer.style ));
+
+    this.keyboardCommandArea.className = "keyboard-command-area";
+    (function( style ){
+        style.width    = "100%";
+        style.height   = "200%";
         style.overflow = "hidden";
         style.position = "absolute";
         style.top      = "0px";
@@ -302,7 +316,8 @@ $.Viewer = function( options ) {
     }(  this.keyboardCommandArea.style ));
 
     this.container.insertBefore( this.canvas, this.container.firstChild );
-    this.container.insertBefore( this.keyboardCommandArea, this.container.firstChild );
+    this.container.insertBefore( this.keyboardCommandContainer, this.container.firstChild );
+    this.keyboardCommandContainer.appendChild( this.keyboardCommandArea);
     this.element.appendChild( this.container );
     this.canvas.appendChild( this.drawersContainer );
     this.canvas.appendChild( this.overlaysContainer );
@@ -324,6 +339,17 @@ $.Viewer = function( options ) {
                     window.scrollTo( 0, point.y );
                 }
             },
+            clickTimeThreshold:    this.clickTimeThreshold,
+            clickDistThreshold:    this.clickDistThreshold,
+            dblClickTimeThreshold: this.dblClickTimeThreshold,
+            dblClickDistThreshold: this.dblClickDistThreshold,
+            clickHandler:          $.delegate( this, onCanvasClick ),
+            dblClickHandler:       $.delegate( this, onCanvasDblClick ),
+            dragHandler:           $.delegate( this, onCanvasDrag ),
+            dragEndHandler:        $.delegate( this, onCanvasDragEnd ),
+            releaseHandler:        $.delegate( this, onCanvasRelease ),
+            scrollHandler:         $.delegate( this, onKeyboardContainerScroll ),
+            pinchHandler:          $.delegate( this, onCanvasPinch ),
 
             keyHandler:         function( event ){
                 if ( !event.preventDefaultAction ) {
@@ -621,6 +647,7 @@ $.extend( $.Viewer.prototype, $.EventSource.prototype, $.ControlDock.prototype, 
         // clear all our references to dom objects
         this.canvas = null;
         this.keyboardCommandArea = null;
+        this.keyboardCommandContainer = null;
         this.container = null;
 
         // clear our reference to the main element - they will need to pass it in again, creating a new viewer
@@ -2544,6 +2571,55 @@ function onCanvasScroll( event ) {
     });
     //cancels event
     return false;
+}
+
+function onKeyboardContainerScroll( event ) {
+    var gestureSettings,
+        factor;
+    time("onKeyboardContainerScroll", event);
+
+    if ( !event.preventDefaultAction && this.viewport ) {
+        gestureSettings = this.gestureSettingsByDeviceType( event.pointerType );
+        if ( gestureSettings.scrollToZoom ) {
+            var element = event.eventSource.element;
+            var container = element.parentNode;
+            var defaultScrollTop = Math.floor(container.offsetHeight / 2);
+            var distance = defaultScrollTop - container.scrollTop;
+            container.scrollTop = defaultScrollTop;
+            factor = Math.pow( this.zoomPerScroll, event.scroll );
+            factor = Math.pow(1.01, distance);
+            var refPoint = this.viewport.pointFromPixel( event.position, true );
+            this.viewport.zoomBy(
+                factor,
+                refPoint
+            );
+            this.viewport.applyConstraints();
+        }
+    }
+    /**
+     * Raised when a scroll event occurs on the {@link OpenSeadragon.Viewer#canvas} element (mouse wheel).
+     *
+     * @event canvas-scroll
+     * @memberof OpenSeadragon.Viewer
+     * @type {object}
+     * @property {OpenSeadragon.Viewer} eventSource - A reference to the Viewer which raised this event.
+     * @property {OpenSeadragon.MouseTracker} tracker - A reference to the MouseTracker which originated this event.
+     * @property {OpenSeadragon.Point} position - The position of the event relative to the tracked element.
+     * @property {Number} scroll - The scroll delta for the event.
+     * @property {Boolean} shift - True if the shift key was pressed during this event.
+     * @property {Object} originalEvent - The original DOM event.
+     * @property {?Object} userData - Arbitrary subscriber-defined object.
+     */
+    this.raiseEvent( 'canvas-scroll', {
+        tracker: event.eventSource,
+        position: event.position,
+        scroll: event.scroll,
+        shift: event.shift,
+        originalEvent: event.originalEvent
+    });
+    //cancels event
+    // return false;
+    return true;
 }
 
 function onContainerExit( event ) {
