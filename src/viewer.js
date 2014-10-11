@@ -116,6 +116,7 @@ $.Viewer = function( options ) {
          * @memberof OpenSeadragon.Viewer#
          */
         keyboardCommandArea: null,
+        keyboardCommandContainer: null,
         /**
          * A &lt;div&gt; element, the element where user-input events are handled for panning and zooming.<br><br>
          * Child element of {@link OpenSeadragon.Viewer#container},
@@ -299,6 +300,8 @@ $.Viewer = function( options ) {
         style.overflow = "hidden";
         style.overflowY = "scroll";
         style.position = "absolute";
+        style.paddingRight = "50px";
+        style.boxSizing = "initial";
         style.top      = "0px";
         style.left     = "0px";
         style.resize   = "none";
@@ -458,6 +461,7 @@ $.Viewer = function( options ) {
         beginControlsAutoHide( _this );
     } );    // initial fade out
 
+    this.keyboardCommandContainer.scrollTop = Math.floor(this.keyboardCommandContainer.offsetHeight / 2);
 };
 
 $.extend( $.Viewer.prototype, $.EventSource.prototype, $.ControlDock.prototype, /** @lends OpenSeadragon.Viewer.prototype */{
@@ -2576,7 +2580,6 @@ function onCanvasScroll( event ) {
 function onKeyboardContainerScroll( event ) {
     var gestureSettings,
         factor;
-    time("onKeyboardContainerScroll", event);
 
     if ( !event.preventDefaultAction && this.viewport ) {
         gestureSettings = this.gestureSettingsByDeviceType( event.pointerType );
@@ -2586,8 +2589,11 @@ function onKeyboardContainerScroll( event ) {
             var defaultScrollTop = Math.floor(container.offsetHeight / 2);
             var distance = defaultScrollTop - container.scrollTop;
             container.scrollTop = defaultScrollTop;
-            factor = Math.pow( this.zoomPerScroll, event.scroll );
-            factor = Math.pow(1.01, distance);
+            var convertedDistance = distance / 100;
+            if (convertedDistance < 0) {
+              convertedDistance = convertedDistance / 2;
+            }
+            factor = 1 + convertedDistance;
             var refPoint = this.viewport.pointFromPixel( event.position, true );
             this.viewport.zoomBy(
                 factor,
