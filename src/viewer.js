@@ -2578,11 +2578,21 @@ function onCanvasScroll( event ) {
 }
 
 function onKeyboardContainerScroll( event ) {
+  var _this = this;
+  setTimeout(function() {
+    afterKeyboardContainerScroll(event, _this);
+  }, 100);
+}
+
+function afterKeyboardContainerScroll( event, thing) {
     var gestureSettings,
         factor;
+    if (!thing) {
+      thing = this;
+    }
 
-    if ( !event.preventDefaultAction && this.viewport ) {
-        gestureSettings = this.gestureSettingsByDeviceType( event.pointerType );
+    if ( !event.preventDefaultAction && thing.viewport ) {
+        gestureSettings = thing.gestureSettingsByDeviceType( event.pointerType );
         if ( gestureSettings.scrollToZoom ) {
             var element = event.eventSource.element;
             var container = element.parentNode;
@@ -2594,12 +2604,12 @@ function onKeyboardContainerScroll( event ) {
               convertedDistance = convertedDistance / 2;
             }
             factor = 1 + convertedDistance;
-            var refPoint = this.viewport.pointFromPixel( event.position, true );
-            this.viewport.zoomBy(
+            var refPoint = thing.viewport.pointFromPixel( event.position, true );
+            thing.viewport.zoomBy(
                 factor,
                 refPoint
             );
-            this.viewport.applyConstraints();
+            thing.viewport.applyConstraints();
         }
     }
     /**
@@ -2616,7 +2626,7 @@ function onKeyboardContainerScroll( event ) {
      * @property {Object} originalEvent - The original DOM event.
      * @property {?Object} userData - Arbitrary subscriber-defined object.
      */
-    this.raiseEvent( 'canvas-scroll', {
+    thing.raiseEvent( 'canvas-scroll', {
         tracker: event.eventSource,
         position: event.position,
         scroll: event.scroll,
