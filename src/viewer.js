@@ -318,8 +318,8 @@ $.Viewer = function( options ) {
         style.resize   = "none";
     }(  this.keyboardCommandArea.style ));
 
-    this.container.insertBefore( this.canvas, this.container.firstChild );
     this.container.insertBefore( this.keyboardCommandContainer, this.container.firstChild );
+    this.container.insertBefore( this.canvas, this.container.firstChild );
     this.keyboardCommandContainer.appendChild( this.keyboardCommandArea);
     this.element.appendChild( this.container );
     this.canvas.appendChild( this.drawersContainer );

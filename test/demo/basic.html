@@ -24,8 +24,17 @@
             // debugMode: true,
             id: "contentDiv",
             prefixUrl: "../../build/openseadragon/images/",
-            tileSources: "../data/testpattern.dzi",
-            showNavigator:true
+            tileSources: "http://" + location.hostname + "/deepzoom/test.tif.dzi",
+            showNavigator:true,
+            visibilityRatio:  0.5,
+            springStiffness:  9,
+            gestureSettingsMouse: {
+              flickEnabled: true,
+              flickMomentum: 0.2
+            },
+            gestureSettingsTouch: {
+              flickMomentum: 0.2
+            }
         });
 
     </script>
