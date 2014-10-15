@@ -310,7 +310,7 @@ $.Viewer = function( options ) {
     this.keyboardCommandArea.className = "keyboard-command-area";
     (function( style ){
         style.width    = "100%";
-        style.height   = "200%";
+        style.height   = "10000px";
         style.overflow = "hidden";
         style.position = "absolute";
         style.top      = "0px";
@@ -461,7 +461,7 @@ $.Viewer = function( options ) {
         beginControlsAutoHide( _this );
     } );    // initial fade out
 
-    this.keyboardCommandContainer.scrollTop = Math.floor(this.keyboardCommandContainer.offsetHeight / 2);
+    this.keyboardCommandContainer.scrollTop = 4000;
 };
 
 $.extend( $.Viewer.prototype, $.EventSource.prototype, $.ControlDock.prototype, /** @lends OpenSeadragon.Viewer.prototype */{
@@ -2596,14 +2596,27 @@ function afterKeyboardContainerScroll( event, thing) {
         if ( gestureSettings.scrollToZoom ) {
             var element = event.eventSource.element;
             var container = element.parentNode;
-            var defaultScrollTop = Math.floor(container.offsetHeight / 2);
+            var defaultScrollTop = 4000;
             var distance = defaultScrollTop - container.scrollTop;
             container.scrollTop = defaultScrollTop;
-            var convertedDistance = distance / 100;
+            var zoomVelocity = thing.zoomPerScroll - 1;
+            if (zoomVelocity < 0) {
+              zoomVelocity = 0.1;
+            }
+            var convertedDistance = distance / (40 / zoomVelocity);
             if (convertedDistance < 0) {
-              convertedDistance = convertedDistance / 2;
+              convertedDistance = convertedDistance;
             }
             factor = 1 + convertedDistance;
+            if (factor < 1) {
+              if (1.0 / thing.zoomPerClick > factor) {
+                factor = 1.0 / thing.zoomPerClick;
+              }
+            } else {
+              if (thing.zoomPerClick < factor) {
+                factor = thing.zoomPerClick;
+              }
+            }
             var refPoint = thing.viewport.pointFromPixel( event.position, true );
             thing.viewport.zoomBy(
                 factor,
