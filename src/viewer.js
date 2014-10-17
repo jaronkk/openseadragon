@@ -263,6 +263,8 @@ $.Viewer = function( options ) {
 
     this.element              = this.element || document.getElementById( this.id );
     this.canvas               = $.makeNeutralElement( "div" );
+    this.eventContainer       = $.makeNeutralElement( "div" );
+    this.eventInner           = $.makeNeutralElement( "div" );
     this.keyboardCommandArea  = $.makeNeutralElement( "textarea" );
     this.drawersContainer     = $.makeNeutralElement( "div" );
     this.overlaysContainer    = $.makeNeutralElement( "div" );
@@ -301,9 +303,36 @@ $.Viewer = function( options ) {
         style.resize   = "none";
     }(  this.keyboardCommandArea.style ));
 
+    this.eventContainer.className = "openseadragon-event-container";
+    (function( style ){
+        style.width    = "100%";
+        style.height   = "100%";
+        style.overflow = "hidden";
+        style.overflowY = "scroll";
+        style.position = "absolute";
+        style.paddingRight = "50px";
+        style.boxSizing = "initial";
+        style.top      = "0px";
+        style.left     = "0px";
+        style.resize   = "none";
+    }(  this.eventContainer.style ));
+
+    this.eventInner.className = "openseadragon-event-inner";
+    (function( style ){
+        style.width    = "100%";
+        style.height   = "10000px";
+        style.overflow = "hidden";
+        style.position = "absolute";
+        style.top      = "0px";
+        style.left     = "0px";
+        style.resize   = "none";
+    }(  this.eventInner.style ));
+
+    this.container.insertBefore( this.eventContainer, this.container.firstChild );
     this.container.insertBefore( this.canvas, this.container.firstChild );
     this.container.insertBefore( this.keyboardCommandArea, this.container.firstChild );
     this.element.appendChild( this.container );
+    this.eventContainer.appendChild( this.eventInner );
     this.canvas.appendChild( this.drawersContainer );
     this.canvas.appendChild( this.overlaysContainer );
 
@@ -380,7 +409,7 @@ $.Viewer = function( options ) {
 
 
     this.innerTracker = new $.MouseTracker({
-        element:               this.canvas,
+        element:               this.eventContainer,
         clickTimeThreshold:    this.clickTimeThreshold,
         clickDistThreshold:    this.clickDistThreshold,
         dblClickTimeThreshold: this.dblClickTimeThreshold,
@@ -390,7 +419,7 @@ $.Viewer = function( options ) {
         dragHandler:           $.delegate( this, onCanvasDrag ),
         dragEndHandler:        $.delegate( this, onCanvasDragEnd ),
         releaseHandler:        $.delegate( this, onCanvasRelease ),
-        scrollHandler:         $.delegate( this, onCanvasScroll ),
+        scrollHandler:         $.delegate( this, onEventContainerScroll ),
         pinchHandler:          $.delegate( this, onCanvasPinch )
     }).setTracking( this.mouseNavEnabled ? true : false ); // default state
 
@@ -432,6 +461,7 @@ $.Viewer = function( options ) {
         beginControlsAutoHide( _this );
     } );    // initial fade out
 
+    this.eventContainer.scrollTop = 4000;
 };
 
 $.extend( $.Viewer.prototype, $.EventSource.prototype, $.ControlDock.prototype, /** @lends OpenSeadragon.Viewer.prototype */{
@@ -2504,6 +2534,76 @@ function onCanvasPinch( event ) {
     });
     //cancels event
     return false;
+}
+
+function onEventContainerScroll( event ) {
+    var _this = this;
+    setTimeout(function() {
+        afterEventContainerScroll(event, _this);
+    }, 100);
+}
+
+function afterEventContainerScroll( event, _this) {
+    var gestureSettings,
+        factor;
+    if (!_this) {
+        _this = this;
+    }
+
+    if ( !event.preventDefaultAction && _this.viewport ) {
+        gestureSettings = _this.gestureSettingsByDeviceType( event.pointerType );
+        if ( gestureSettings.scrollToZoom ) {
+            var element = event.eventSource.element;
+            var defaultScrollTop = 4000;
+            var distance = defaultScrollTop - element.scrollTop;
+            element.scrollTop = defaultScrollTop;
+            var zoomVelocity = _this.zoomPerScroll - 1;
+            if (zoomVelocity < 0) {
+                zoomVelocity = 0.1;
+            }
+            var convertedDistance = distance / (_this.pixelsPerWheelLine / zoomVelocity);
+            if (convertedDistance < 0) {
+                convertedDistance = convertedDistance;
+            }
+            factor = 1 + convertedDistance;
+            if (factor < 1) {
+                if (1.0 / _this.zoomPerClick > factor) {
+                    factor = 1.0 / _this.zoomPerClick;
+                }
+            } else {
+                if (_this.zoomPerClick < factor) {
+                    factor = _this.zoomPerClick;
+                }
+            }
+            var refPoint = _this.viewport.pointFromPixel( event.position, true );
+            _this.viewport.zoomBy(
+                factor,
+                refPoint
+            );
+            _this.viewport.applyConstraints();
+        }
+    }
+    /**
+     * Raised when a scroll event occurs on the {@link OpenSeadragon.Viewer#canvas} element (mouse wheel).
+     *
+     * @event canvas-scroll
+     * @memberof OpenSeadragon.Viewer
+     * @type {object}
+     * @property {OpenSeadragon.Viewer} eventSource - A reference to the Viewer which raised this event.
+     * @property {OpenSeadragon.MouseTracker} tracker - A reference to the MouseTracker which originated this event.
+     * @property {OpenSeadragon.Point} position - The position of the event relative to the tracked element.
+     * @property {Number} scroll - The scroll delta for the event.
+     * @property {Boolean} shift - True if the shift key was pressed during this event.
+     * @property {Object} originalEvent - The original DOM event.
+     * @property {?Object} userData - Arbitrary subscriber-defined object.
+     */
+    _this.raiseEvent( 'canvas-scroll', {
+        tracker: event.eventSource,
+        position: event.position,
+        scroll: event.scroll,
+        shift: event.shift,
+        originalEvent: event.originalEvent
+    });
 }
 
 function onCanvasScroll( event ) {
