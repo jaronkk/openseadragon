@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trackpad Scroll Zoom Demo for OpenSeadragon</title>
+    <script type="text/javascript" src='openseadragon.min.js'></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <style type="text/css">
+
+      .openseadragon1 {
+          width: 800px;
+          height: 600px;
+      }
+
+    </style>
+</head>
+<body>
+    <div>
+      Demo page to show off smoother scroll zooming for trackpads.
+    </div>
+    <div id="contentDiv" class="openseadragon1"></div>
+    <script type="text/javascript">
+
+        var viewer = OpenSeadragon({
+            id: "contentDiv",
+            prefixUrl: "images/",
+            tileSources: "/example-images/highsmith/highsmith.dzi"
+        });
+
+    </script>
+</body>
+</html>
