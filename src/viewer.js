@@ -1440,7 +1440,7 @@ $.extend( $.Viewer.prototype, $.EventSource.prototype, $.ControlDock.prototype, 
 
             if ( this.showZoomControl ) {
                 buttons.push( this.zoomInButton = new $.Button({
-                    element:    this.zoomInButton ? $.getElement( this.zoomInButton ) : null,
+                    element:    this.zoomInButtonHTML ? $.getElement( this.zoomInButtonHTML ) : null,
                     clickTimeThreshold: this.clickTimeThreshold,
                     clickDistThreshold: this.clickDistThreshold,
                     tooltip:    $.getString( "Tooltips.ZoomIn" ),
@@ -1454,7 +1454,7 @@ $.extend( $.Viewer.prototype, $.EventSource.prototype, $.ControlDock.prototype, 
                     onEnter:    beginZoomingInHandler,
                     onExit:     endZoomingHandler,
                     onFocus:    onFocusHandler,
-                    onBlur:     onBlurHandler
+                    onBlur:     onBlurHandler,
                 }));
 
                 buttons.push( this.zoomOutButton = new $.Button({
@@ -2138,7 +2138,28 @@ function getOverlayObject( viewer, overlay ) {
             overlay.className :
             "openseadragon-overlay"
         );
+        element.style.overflow = "hidden";
+
+        var eventContainer = createEventContainer();
+
+        new $.MouseTracker({
+            element:               eventContainer,
+            clickTimeThreshold:    viewer.clickTimeThreshold,
+            clickDistThreshold:    viewer.clickDistThreshold,
+            dblClickTimeThreshold: viewer.dblClickTimeThreshold,
+            dblClickDistThreshold: viewer.dblClickDistThreshold,
+            clickHandler:          $.delegate( viewer, onCanvasClick ),
+            dblClickHandler:       $.delegate( viewer, onCanvasDblClick ),
+            dragHandler:           $.delegate( viewer, onCanvasDrag ),
+            dragEndHandler:        $.delegate( viewer, onCanvasDragEnd ),
+            releaseHandler:        $.delegate( viewer, onCanvasRelease ),
+            scrollHandler:         $.delegate( viewer, onEventContainerScroll ),
+            pinchHandler:          $.delegate( viewer, onCanvasPinch )
+        }).setTracking( viewer.mouseNavEnabled ? true : false ); // default state
+
+        element.appendChild( eventContainer );
     }
+    window.console.log("overlay", viewer);
 
     var location = overlay.location;
     if ( !location ) {
@@ -2534,6 +2555,39 @@ function onCanvasPinch( event ) {
     });
     //cancels event
     return false;
+}
+
+function createEventContainer() {
+    var eventContainer       = $.makeNeutralElement( "div" );
+    var eventInner           = $.makeNeutralElement( "div" );
+    eventContainer.className = "openseadragon-event-container";
+    (function( style ){
+        style.width    = "100%";
+        style.height   = "100%";
+        style.overflow = "hidden";
+        style.overflowY = "scroll";
+        style.position = "absolute";
+        style.paddingRight = "50px";
+        style.boxSizing = "initial";
+        style.top      = "0px";
+        style.left     = "0px";
+        style.resize   = "none";
+    }(  eventContainer.style ));
+
+    eventInner.className = "openseadragon-event-inner";
+    (function( style ){
+        style.width    = "100%";
+        style.height   = "10000px";
+        style.overflow = "hidden";
+        style.position = "absolute";
+        style.top      = "0px";
+        style.left     = "0px";
+        style.resize   = "none";
+    }(  eventInner.style ));
+
+    eventContainer.appendChild( eventInner );
+
+    return eventContainer;
 }
 
 function onEventContainerScroll( event ) {
