@@ -328,12 +328,12 @@ $.Viewer = function( options ) {
         style.resize   = "none";
     }(  this.eventInner.style ));
 
-    this.container.insertBefore( this.eventContainer, this.container.firstChild );
     this.container.insertBefore( this.canvas, this.container.firstChild );
     this.container.insertBefore( this.keyboardCommandArea, this.container.firstChild );
     this.element.appendChild( this.container );
-    this.eventContainer.appendChild( this.eventInner );
     this.canvas.appendChild( this.drawersContainer );
+    this.canvas.appendChild( this.eventContainer );
+    this.eventContainer.appendChild( this.eventInner );
     this.canvas.appendChild( this.overlaysContainer );
 
     //Used for toggling between fullscreen and default container size
